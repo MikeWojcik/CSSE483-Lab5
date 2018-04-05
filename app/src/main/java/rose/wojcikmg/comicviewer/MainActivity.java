@@ -1,8 +1,10 @@
 package rose.wojcikmg.comicviewer;
 
 import android.graphics.Bitmap;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.view.PagerTitleStrip;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -22,6 +24,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -59,10 +62,13 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                mComicsPagerAdapter.getItem(mComicsPagerAdapter.size + 1);
+              //  Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                //        .setAction("Action", null).show();
             }
         });
+
+        //PagerTitleStrip p = findViewById(R.id.pager_title_strip);
 
     }
 
@@ -92,7 +98,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * A placeholder fragment containing a simple view.
      */
-    public static class ComicFragment extends Fragment implements GetComicTask.ComicConsumer{
+    public static class ComicFragment extends Fragment implements GetComicTask.ComicConsumer {
         /**
          * The fragment argument representing the section number for this
          * fragment.
@@ -130,15 +136,13 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        public void onCreate(Bundle savedInstanceStart){
+        public void onCreate(Bundle savedInstanceStart) {
             super.onCreate(savedInstanceStart);
 
-            if(getArguments() != null){
+            if (getArguments() != null) {
                 mComicWrapper = getArguments().getParcelable(ARG_COMICWRAPPER);
                 String urlString = String.format("https://xkcd.com/%d/info.0.json", mComicWrapper.getIssueNum());
                 new GetComicTask(this).execute(urlString);
-                getView().setBackgroundColor(getResources().getColor(mComicWrapper.getColor()));
-
             }
         }
 
@@ -146,6 +150,8 @@ public class MainActivity extends AppCompatActivity {
         public void onComicLoaded(Comic comic) {
             Log.d("COMIC", "Comic Object\n" + comic);
             mComicWrapper.setComic(comic);
+            TextView v = getView().findViewById(R.id.section_label);
+            v.setText(comic.getTitle());
 
             new GetComicImageTask(this, comic).execute(comic.getImg());
         }
@@ -154,6 +160,10 @@ public class MainActivity extends AppCompatActivity {
         public void onComicImageLoaded(Comic comic) {
             ImageView view = getView().findViewById(R.id.comicImage);
             view.setImageBitmap(comic.getBmp());
+            getView().setBackgroundColor(getResources().getColor(mComicWrapper.getColor()));
+
+
+
         }
 
         @Override
@@ -170,21 +180,43 @@ public class MainActivity extends AppCompatActivity {
      */
     public class ComicsPagerAdapter extends FragmentPagerAdapter {
 
+        private ArrayList<ComicWrapper> listWrap;
+        private int size;
+
         public ComicsPagerAdapter(FragmentManager fm) {
             super(fm);
+            listWrap = new ArrayList<>(6);
+            //size =5;
         }
 
         @Override
         public Fragment getItem(int position) {
+            if(position> size){
+             listWrap.ensureCapacity(position);
+            }
+            ComicWrapper c = new ComicWrapper();
+            listWrap.add(position,c);
             // getItem is called to instantiate the fragment for the given page.
             // Return a ComicFragment (defined as a static inner class below).
-            return ComicFragment.newInstance(new ComicWrapper());
+            return ComicFragment.newInstance(c);
         }
 
         @Override
         public int getCount() {
             // Show 5 total pages.
+           // return listWrap.size();
             return 5;
+        }
+
+        @Nullable
+        @Override
+        public CharSequence getPageTitle(int position) {
+
+            if (5 >= position) {
+                return "issue " + listWrap.get(position).getIssueNum();
+            } else {
+                return "issue";
+           }
         }
     }
 }
